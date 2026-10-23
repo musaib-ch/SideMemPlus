@@ -24,6 +24,7 @@ jobs:
           PY
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup target add aarch64-apple-ios
+          export DEVELOPER_DIR="$(xcode-select -p)"
           SIMULATOR=0 bash build-rust.sh
           cd ..
           cp -R upstream/SideInstallerFFI.xcframework ./SideInstallerFFI.xcframework
