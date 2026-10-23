@@ -1,85 +1,120 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private enum BuildStatus {
-    static let memory = "Not connected: Apple developer authentication and entitlement provisioning core required."
-    static let jit = "Not connected: device pairing and a compatible JIT provider required."
-    static let install = "IPA import is enabled. Code signing and installation are not connected."
+enum SideMemCapability: String, CaseIterable {
+    case memory = "Increased Memory Limit"
+    case jit = "JIT"
+    case installation = "IPA Installation"
+}
+
+struct ImportedIPA: Identifiable {
+    let id = UUID()
+    let filename: String
+    let fileURL: URL
+}
+
+@MainActor
+final class SideMemStore: ObservableObject {
+    @Published var importedApps: [ImportedIPA] = []
+    @Published var message: String?
+    @Published var isImporting = false
+
+    func importIPA(from url: URL) {
+        guard url.pathExtension.lowercased() == "ipa" else {
+            message = "Please select an .ipa file."
+            return
+        }
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("ImportedIPAs", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let destination = directory.appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)
+            try FileManager.default.copyItem(at: url, to: destination)
+            importedApps.append(ImportedIPA(filename: url.lastPathComponent, fileURL: destination))
+            message = "IPA securely copied into this app's documents. Signing and installation are not yet connected."
+        } catch {
+            message = "Import failed: \(error.localizedDescription)"
+        }
+    }
 }
 
 struct DashboardView: View {
-    @State private var showImporter = false
-    @State private var selectedIPA: URL?
-    @State private var importError: String?
+    @StateObject private var store = SideMemStore()
+    @State private var importing = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Label("SideMemPlus", systemImage: "memorychip")
-                        .font(.largeTitle.bold())
-                    Text("Increased Memory Limit, JIT and IPA management")
-                        .foregroundStyle(.secondary)
-                    Text("Development preview. Unavailable actions are deliberately disabled until integrated and tested.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                Section("Increased Memory Limit") {
-                    Label("INCREASED_MEMORY_LIMIT", systemImage: "checkmark.shield")
-                        .font(.subheadline.monospaced())
-                    Text(BuildStatus.memory)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Button("Enable for App ID") { }
-                        .disabled(true)
-                }
-                Section("JIT") {
-                    Text(BuildStatus.jit)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Button("Enable JIT") { }
-                        .disabled(true)
-                }
-                Section("IPA files") {
-                    Button {
-                        showImporter = true
-                    } label: {
-                        Label("Import IPA", systemImage: "square.and.arrow.down")
+        TabView {
+            NavigationStack {
+                List {
+                    Section {
+                        Label("SideMemPlus", systemImage: "memorychip")
+                            .font(.title.bold())
+                        Text("Your IPA library, memory entitlement preparation and JIT tools in one place.")
+                            .foregroundStyle(.secondary)
                     }
-                    if let selectedIPA {
-                        Text("Selected: \(selectedIPA.lastPathComponent)")
+                    Section("My IPAs") {
+                        Button { importing = true } label: {
+                            Label("Import IPA", systemImage: "plus.circle.fill")
+                        }
+                        ForEach(store.importedApps) { ipa in
+                            Label(ipa.filename, systemImage: "shippingbox")
+                        }
+                        if store.importedApps.isEmpty {
+                            Text("No IPAs imported yet.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Section("Signing status") {
+                        Label("Apple developer authentication: not connected", systemImage: "lock.shield")
+                        Label("Increased Memory Limit: not connected", systemImage: "memorychip")
+                        Text("The memory capability must be enabled for the app's registered App ID before a compatible provisioning profile is generated. A valid profile is required for signing.")
                             .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                    if let importError {
-                        Text(importError).foregroundStyle(.red)
+                    if let message = store.message {
+                        Section("Activity") { Text(message).font(.footnote) }
                     }
-                    Text(BuildStatus.install)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Button("Sign and Install") { }
-                        .disabled(true)
                 }
-                Section("About") {
-                    Link("SideInstaller", destination: URL(string: "https://github.com/FrizzleM/SideInstaller")!)
-                    Link("SideStore", destination: URL(string: "https://github.com/SideStore/SideStore")!)
-                    Link("StikDebug", destination: URL(string: "https://github.com/StikDebug/StikDebug")!)
+                .navigationTitle("Apps")
+                .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
+                    switch result {
+                    case .success(let url): store.importIPA(from: url)
+                    case .failure(let error): store.message = error.localizedDescription
+                    }
                 }
             }
-            .navigationTitle("SideMemPlus")
-            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
-                switch result {
-                case .success(let urls):
-                    guard let url = urls.first else { return }
-                    guard url.pathExtension.lowercased() == "ipa" else {
-                        importError = "Select an IPA file."
-                        return
+            .tabItem { Label("Apps", systemImage: "square.stack.3d.up") }
+
+            NavigationStack {
+                List {
+                    Section("JIT enabler") {
+                        Label("Not connected", systemImage: "bolt.slash")
+                        Text("A paired device connection, valid pairing record, and iOS-version-compatible debugger backend are required. SideMemPlus will not falsely report that JIT is enabled.")
+                            .foregroundStyle(.secondary)
                     }
-                    selectedIPA = url
-                    importError = nil
-                case .failure(let error):
-                    importError = error.localizedDescription
                 }
+                .navigationTitle("JIT")
             }
+            .tabItem { Label("JIT", systemImage: "bolt") }
+
+            NavigationStack {
+                List {
+                    Section("Security") {
+                        Label("Apple credentials are not requested in this preview", systemImage: "key")
+                        Label("Imported IPAs remain on device", systemImage: "iphone")
+                        Label("No pairing records are transmitted", systemImage: "shield")
+                    }
+                    Section("References") {
+                        Link("SideInstaller by FrizzleM", destination: URL(string: "https://github.com/FrizzleM/SideInstaller")!)
+                        Link("SideStore", destination: URL(string: "https://github.com/SideStore/SideStore")!)
+                        Link("StikDebug", destination: URL(string: "https://github.com/StikDebug/StikDebug")!)
+                    }
+                }
+                .navigationTitle("Settings")
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape") }
         }
     }
 }
