@@ -29,7 +29,7 @@ jobs:
           OUTPUT: build/SideMemPlus.ipa
           MIN_IOS_SDK: '27.1'
         run: |
-          bash scripts/build-ipa.sh
+          RUNNER_DEBUG=1 bash -x scripts/build-ipa.sh
       - name: Set SideMemPlus display name and package
         run: |
           set -euo pipefail
