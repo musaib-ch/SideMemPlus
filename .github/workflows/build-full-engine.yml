@@ -1,0 +1,46 @@
+name: Build SideMemPlus Full Engine (experimental)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned SideInstaller source
+        run: |
+          git clone https://github.com/FrizzleM/SideInstaller.git upstream
+          cd upstream
+          git checkout 4a5e3e70a9f5d3aa20432045e730810e2ca5fea4
+          echo "Upstream source commit: $(git rev-parse HEAD)"
+      - name: Install build prerequisites
+        run: |
+          brew install xcodegen
+          rustup target add aarch64-apple-ios
+      - name: Build upstream engine and iOS application
+        working-directory: upstream
+        env:
+          BUNDLE_ID: com.sidememplus.app
+          OUTPUT: build/SideMemPlus.ipa
+          MIN_IOS_SDK: '27.1'
+        run: |
+          bash scripts/build-ipa.sh
+      - name: Set SideMemPlus display name and package
+        run: |
+          set -euo pipefail
+          mkdir -p repackage
+          cd repackage
+          unzip -q ../upstream/build/SideMemPlus.ipa
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName SideMemPlus' Payload/SideInstaller.app/Info.plist || /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string SideMemPlus' Payload/SideInstaller.app/Info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleName SideMemPlus' Payload/SideInstaller.app/Info.plist || true
+          mv Payload/SideInstaller.app Payload/SideMemPlus.app
+          zip -qry ../SideMemPlus-full-experimental-unsigned.ipa Payload
+          cd ..
+          unzip -l SideMemPlus-full-experimental-unsigned.ipa | head -25
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideMemPlus-full-experimental-unsigned
+          path: SideMemPlus-full-experimental-unsigned.ipa
+          if-no-files-found: error
