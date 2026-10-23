@@ -1,5 +1,8 @@
 name: Build SideMemPlus Full Engine (experimental)
 on:
+  push:
+    paths:
+      - '.github/workflows/build-full-engine.yml'
   workflow_dispatch:
 permissions:
   contents: read
