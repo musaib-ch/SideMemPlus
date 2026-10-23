@@ -1,0 +1,29 @@
+name: Build SideMemPlus IPA preview
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build unsigned device app
+        run: |
+          xcodebuild -project SideMemPlus.xcodeproj -scheme SideMemPlus -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Package IPA preview
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/SideMemPlus.app Payload/
+          /usr/bin/zip -qry SideMemPlus-preview-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideMemPlus-preview-unsigned
+          path: SideMemPlus-preview-unsigned.ipa
+          if-no-files-found: error
