@@ -22,9 +22,8 @@ jobs:
           from pathlib import Path
           p = Path("scripts/build-ipa.sh")
           s = p.read_text()
-          start = s.index('if ! command -v cargo >/dev/null && [ -f "$HOME/.cargo/env" ]; then')
-          end = s.index("\nfi", start) + 3
-          p.write_text(s[:start] + '# Rust is on PATH in CI; avoid sourcing .cargo/env under set -e.\n' + s[end:])
+          s = s.replace('source "$HOME/.cargo/env"', ': # Rust already on PATH')
+          p.write_text(s)
           PY
       - name: Install build prerequisites
         run: |
