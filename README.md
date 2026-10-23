@@ -1,33 +1,26 @@
-# SideMemPlus iOS
+# SideMemPlus
 
-Standalone SwiftUI development scaffold for Increased Memory Limit, JIT, and IPA management.
+Independent native SwiftUI iOS app for IPA management, with planned Increased Memory Limit signing and JIT integration.
 
-## Currently implemented
-- SideMemPlus dashboard and IPA file import picker.
-- Buildable XcodeGen project with iOS 17.4+ deployment target.
-- GitHub Actions workflow to produce an **unsigned preview IPA**.
+## Implemented
+- Original three-tab user interface: Apps, JIT, Settings
+- IPA import to the app's Documents directory
+- GitHub Actions unsigned iOS IPA build
 
-## Not implemented
-- Apple developer sign-in, entitlement enablement and profile download.
-- IPA signing or installation.
-- Device pairing and JIT activation.
+## Not yet implemented
+- Apple account authentication and 2FA
+- Apple developer portal App ID capability activation (`INCREASED_MEMORY_LIMIT`)
+- Provisioning profile issuance, signing or IPA installation
+- Pairing and JIT activation
 
-The disabled controls intentionally do not pretend to perform unavailable actions.
+The app does not claim these operations work until implemented and device-tested. The earlier workflow that rebranded upstream SideInstaller was removed. Old artifacts from past builds may still be visible, but they are not independent SideMemPlus applications.
+
+## Upstream references
+- SideInstaller by FrizzleM: https://github.com/FrizzleM/SideInstaller
+- SideStore: https://github.com/SideStore/SideStore
+- StikDebug: https://github.com/StikDebug/StikDebug
+
+Source code from these projects has not been copied into this independent scaffold. Before implementing platform functionality, assess their respective licenses, Apple service compatibility and security risks.
 
 ## Build
-Open GitHub Actions > Build SideMemPlus IPA preview > Run workflow, or push to main. Download the SideMemPlus-preview-unsigned artifact. It needs code signing to install.
-
-## References and licenses
-- https://github.com/FrizzleM/SideInstaller
-- https://github.com/SideStore/SideStore
-- https://github.com/StikDebug/StikDebug
-
-No code from these upstream projects is included. Review their licenses before integrating. Never upload Apple credentials or pairing records to GitHub Actions.
-
-## Full engine experimental IPA
-
-The `Build SideMemPlus Full Engine (experimental)` workflow checks out SideInstaller at a pinned upstream commit, compiles its Rust/iOS code with the SideMemPlus bundle ID, changes the unsigned app display name to SideMemPlus and uploads `SideMemPlus-full-experimental-unsigned.ipa`.
-
-This is an **upstream-based experimental build**, not a complete rewritten or security-audited SideMemPlus implementation. Its interface and behavior largely remain SideInstaller's. It includes upstream Apple account authentication, entitlement support, IPA signing and install workflows, subject to their compatibility limits. A generalized JIT enabler for arbitrary apps is **not confirmed**. Neither build automatically signs with a device-trusted certificate. Never enter Apple credentials into a build log or GitHub secrets for this workflow.
-
-Source attribution: [SideInstaller by FrizzleM](https://github.com/FrizzleM/SideInstaller), used under its noncommercial/custom license. Official SideInstaller binaries are not redistributed.
+Go to Actions > Build SideMemPlus IPA preview. A successful run offers an unsigned IPA artifact; it requires appropriate signing before installation.
