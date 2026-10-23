@@ -67,8 +67,10 @@ struct DashboardView: View {
                         }
                     }
                     Section("Signing status") {
-                        Label("Apple developer authentication: not connected", systemImage: "lock.shield")
-                        Label("Increased Memory Limit: not connected", systemImage: "memorychip")
+                        Label("Developer account access is available in Memory Limit", systemImage: "lock.shield")
+                        NavigationLink { MemoryCapabilityView() } label: {
+                            Label("Manage Increased Memory Limit", systemImage: "memorychip")
+                        }
                         Text("The memory capability must be enabled for the app's registered App ID before a compatible provisioning profile is generated. A valid profile is required for signing.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
