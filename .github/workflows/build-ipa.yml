@@ -12,6 +12,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Build Rust entitlement engine
+        run: |
+          git clone https://github.com/FrizzleM/SideInstaller.git upstream
+          cd upstream
+          git checkout 4a5e3e70a9f5d3aa20432045e730810e2ca5fea4
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('build-rust.sh')
+          p.write_text(p.read_text().replace('source "$HOME/.cargo/env"', ': # cargo already available'))
+          PY
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustup target add aarch64-apple-ios
+          SIMULATOR=0 bash build-rust.sh
+          cd ..
+          cp -R upstream/SideInstallerFFI.xcframework ./SideInstallerFFI.xcframework
       - name: Generate project
         run: xcodegen generate
       - name: Build unsigned device app
