@@ -20,10 +20,11 @@ jobs:
           echo "Upstream source commit: $(git rev-parse HEAD)"
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("scripts/build-ipa.sh")
-          s = p.read_text()
-          s = s.replace('source "$HOME/.cargo/env"', ': # Rust already on PATH')
-          p.write_text(s)
+          for name in ("scripts/build-ipa.sh", "build-rust.sh"):
+              p = Path(name)
+              s = p.read_text()
+              s = s.replace('source "$HOME/.cargo/env"', ': # Rust already on PATH')
+              p.write_text(s)
           PY
       - name: Install build prerequisites
         run: |
