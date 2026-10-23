@@ -14,6 +14,9 @@ targets:
     type: application
     platform: iOS
     sources: [SideMemPlus]
+    dependencies:
+      - framework: SideInstallerFFI.xcframework
+        embed: false
     settings:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: 'SideMemPlus'
@@ -21,4 +24,5 @@ targets:
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
         SUPPORTS_MACCATALYST: NO
+        OTHER_LDFLAGS: '-lc++'
         IPHONEOS_DEPLOYMENT_TARGET: '17.4'
